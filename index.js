@@ -24,6 +24,7 @@ async function run() {
     const productCollection = database.collection("products");
     const orderCollection = database.collection("orders");
     const reviewCollection = database.collection("reviews");
+    const usersCollection = database.collection("users");
 
 
     // get api (get all products)
@@ -50,6 +51,18 @@ async function run() {
       res.send(result);
     });
 
+    //get api (get match isAdmin?)
+    app.get('/admin/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      let isAdmin = false;
+      if (user?.role) {
+        isAdmin = true;
+      }
+      res.send({ admin: isAdmin });
+    })
+
 
     //post api (post user order)
     app.post('/orders', async (req, res) => {
@@ -74,11 +87,36 @@ async function run() {
       res.json(result);
     })
 
+    //post api (add user to db)
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user)
+      res.json(result);
+    });
+
+    //update api (make admin)
+    app.put('/users/admin', async (req, res) => {
+      const user = req.body;
+      const filter = { email: user.email }
+      const updateDoc = { $set: { role: 'admin' } }
+      const result = await usersCollection.updateOne(filter, updateDoc)
+      res.json(result);
+    })
+
     //delete api (delete users order)
-    app.delete('/delete/:name', async (req, res) => {
+    app.delete('/orders/delete/:name', async (req, res) => {
       const name = req.params.name;
       const query = { 'orderInfo.name': name };
       const result = await orderCollection.deleteOne(query);
+      console.log(result)
+      res.json(result);
+    });
+
+    //delete api (delete a product from db)
+    app.delete('/products/delete/:name', async (req, res) => {
+      const name = req.params.name;
+      const query = { name: name };
+      const result = await productCollection.deleteOne(query);
       console.log(result)
       res.json(result);
     });
